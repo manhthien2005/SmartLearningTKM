@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .cloud-shape {
+    @apply absolute rounded-full bg-gradient-to-br from-white/95 to-white/80 backdrop-blur-sm shadow-2xl border border-white/50 transition-all duration-300 ease-out;
+  }
+  
+  .cloud-shape:hover {
+    @apply bg-gradient-to-br from-white to-white/90 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4)] border-white/70 scale-105;
+  }
+  
+  .glass-effect {
+    @apply bg-white/90 backdrop-blur-sm border border-white/30 shadow-lg;
+  }
+  
+  .lottie-icon {
+    object-fit: contain !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Lottie element sẽ tự scale theo container */
+  dotlottie-wc.lottie-icon {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+  
+  .lottie-icon svg,
+  .lottie-icon canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    aspect-ratio: 1/1 !important;
+  }
+  
+  /* Kiểm soát shadow DOM canvas để scale theo container */
+  dotlottie-wc.lottie-icon canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+  
+  /* Force responsive container */
+  dotlottie-wc.lottie-icon {
+    contain: layout style !important;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-education-main focus:border-transparent transition-all duration-200 placeholder-gray-500;
+  }
+  
+  .btn-primary {
+    @apply w-full bg-gradient-to-r from-education-main to-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:from-education-dark hover:to-primary-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl;
+  }
+  
+  .btn-secondary {
+    @apply w-full bg-white/70 text-education-dark py-3 px-6 rounded-xl font-medium hover:bg-white/90 transition-all duration-200 border border-education-main/20;
+  }
+}
