@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  user_id        Int       @id @default(autoincrement())
+  email          String    @unique
+  password_hash  String
+  full_name      String
+  phone_number   String?
+  avatar_url     String?
+  date_of_birth  DateTime?
+  gender         String?
+  address        String?
+  status         String    @default("active")
+  email_verified Boolean   @default(false)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  last_login     DateTime?
+
+  user_roles             user_roles[]
+  password_reset_tokens  password_reset_tokens[]
+  email_verifications    email_verifications[]
+}
+
+model roles {
+  role_id     Int          @id @default(autoincrement())
+  role_name   String       @unique
+  description String?
+  created_at  DateTime     @default(now())
+
+  user_roles  user_roles[]
+}
+
+model user_roles {
+  user_role_id Int      @id @default(autoincrement())
+  user_id      Int
+  role_id      Int
+  assigned_at  DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  role roles @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+
+  @@unique([user_id, role_id])
+}
+
+model password_reset_tokens {
+  token_id   Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model email_verifications {
+  verification_id Int      @id @default(autoincrement())
+  user_id         Int
+  token           String   @unique
+  expires_at      DateTime
+  verified        Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+

@@ -53,3 +53,4 @@ logs
 # Old CRA files (backup)
 src/
 public/index.html
+/generated/prisma
