@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import OTPVerification from './OTPVerification'
+import ForgotPasswordModal from './ForgotPasswordModal'
 
 // Type declaration for dotlottie-wc Web Component
 declare global {
@@ -40,7 +44,13 @@ interface RoleInfo {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
+  const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
+  const [showOTP, setShowOTP] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [showForgotPasswordOTP, setShowForgotPasswordOTP] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
@@ -94,9 +104,169 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted:', { ...formData, role: selectedRole, type: isLogin ? 'login' : 'register' })
+
+    // Prevent spam clicks
+    if (isLoading) return
+
+    setIsLoading(true)
+
+    try {
+      if (isLogin) {
+        // Handle Login
+        // TODO: Replace with actual API call
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Mock successful login
+        toast.success('Đăng nhập thành công!', {
+          position: 'bottom-right',
+          duration: 3000,
+          icon: '🎉',
+          style: {
+            background: '#10b981',
+            color: '#fff',
+            fontWeight: '500',
+            borderRadius: '12px',
+            padding: '16px',
+          },
+        })
+
+        // Redirect based on role after short delay
+        setTimeout(() => {
+          if (selectedRole === 'student') {
+            router.push('/student')
+          } else if (selectedRole === 'teacher') {
+            router.push('/teacher')
+          }
+        }, 1000)
+      } else {
+        // Handle Register - only show OTP for students
+        if (selectedRole === 'student') {
+          // Validate password confirmation
+          if (formData.password !== formData.confirmPassword) {
+            toast.error('Mật khẩu xác nhận không khớp!', {
+              position: 'bottom-right',
+              duration: 3000,
+            })
+            setIsLoading(false)
+            return
+          }
+
+          // TODO: Replace with actual API call to send OTP
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Show OTP verification
+          setShowOTP(true)
+          
+          toast.success('Mã OTP đã được gửi đến email của bạn', {
+            position: 'bottom-right',
+            duration: 3000,
+            style: {
+              background: '#0ea5e9',
+              color: '#fff',
+              fontWeight: '500',
+              borderRadius: '12px',
+              padding: '16px',
+            },
+          })
+          setIsLoading(false)
+        } else {
+          // For teacher - direct registration without OTP
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          toast.success('Đăng ký thành công!', {
+            position: 'bottom-right',
+            duration: 3000,
+            icon: '🎉',
+          })
+
+          setTimeout(() => {
+            router.push('/teacher')
+          }, 1000)
+        }
+      }
+    } catch (error) {
+      setIsLoading(false)
+      
+      toast.error(isLogin ? 'Đăng nhập thất bại!' : 'Đăng ký thất bại!', {
+        position: 'bottom-right',
+        duration: 4000,
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '12px',
+          padding: '16px',
+        },
+      })
+    }
+  }
+
+  const handleOTPSuccess = () => {
+    toast.success('Xác thực thành công! Chào mừng đến với SLearn', {
+      position: 'bottom-right',
+      duration: 3000,
+      icon: '✅',
+      style: {
+        background: '#10b981',
+        color: '#fff',
+        fontWeight: '500',
+        borderRadius: '12px',
+        padding: '16px',
+      },
+    })
+
+    // Redirect to student dashboard
+    setTimeout(() => {
+      router.push('/student')
+    }, 500)
+  }
+
+  const handleOTPBack = () => {
+    setShowOTP(false)
+  }
+
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true)
+  }
+
+  const handleForgotPasswordSubmit = (email: string) => {
+    setForgotPasswordEmail(email)
+    setShowForgotPassword(false)
+    setShowForgotPasswordOTP(true)
+  }
+
+  const handleForgotPasswordClose = () => {
+    setShowForgotPassword(false)
+  }
+
+  const handleForgotPasswordOTPSuccess = () => {
+    toast.success('Xác thực thành công!', {
+      position: 'bottom-right',
+      duration: 3000,
+      icon: '✅',
+      style: {
+        background: '#10b981',
+        color: '#fff',
+        fontWeight: '500',
+        borderRadius: '12px',
+        padding: '16px',
+      },
+    })
+
+    // TODO: Redirect to reset password page or show reset password modal
+    setShowForgotPasswordOTP(false)
+    toast('Chức năng đặt lại mật khẩu sẽ được triển khai sau', {
+      position: 'bottom-right',
+      duration: 4000,
+      icon: 'ℹ️',
+    })
+  }
+
+  const handleForgotPasswordOTPBack = () => {
+    setShowForgotPasswordOTP(false)
+    setShowForgotPassword(true)
   }
 
   return (
@@ -125,10 +295,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
         <div className="flex flex-col md:flex-row h-full md:h-full min-h-full">
           {/* Back button */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={!isLoading ? { scale: 1.1 } : {}}
+            whileTap={!isLoading ? { scale: 0.9 } : {}}
             onClick={onBack}
-            className="absolute top-6 right-6 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+            disabled={isLoading}
+            className={`absolute top-6 right-6 z-10 p-2 rounded-full transition-all duration-200 ${
+              isLoading ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'
+            }`}
           >
             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -266,17 +439,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
                 <div className="relative flex">
                   <button
                     onClick={() => setIsLogin(true)}
+                    disabled={isLoading}
                     className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors duration-300 ${
                       isLogin ? 'text-white' : 'text-gray-700'
-                    }`}
+                    } ${isLoading ? 'cursor-not-allowed opacity-70' : ''}`}
                   >
                     Đăng nhập
                   </button>
                   <button
                     onClick={() => setIsLogin(false)}
+                    disabled={isLoading}
                     className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors duration-300 ${
                       !isLogin ? 'text-white' : 'text-gray-700'
-                    }`}
+                    } ${isLoading ? 'cursor-not-allowed opacity-70' : ''}`}
                   >
                     Đăng ký
                   </button>
@@ -428,28 +603,43 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
               {/* Submit Button */}
               <motion.button
                 type="submit"
-                whileHover={{ 
+                disabled={isLoading}
+                whileHover={!isLoading ? { 
                   scale: 1.02,
                   boxShadow: "0 10px 25px -5px rgba(14, 165, 233, 0.4), 0 4px 6px -2px rgba(14, 165, 233, 0.1)"
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-education-main to-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:from-education-dark hover:to-primary-700 transition-all duration-200 shadow-lg mb-3 md:mb-4"
+                } : {}}
+                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 shadow-lg mb-3 md:mb-4 flex items-center justify-center gap-2 ${
+                  isLoading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-education-main to-primary-600 text-white hover:from-education-dark hover:to-primary-700'
+                }`}
               >
-                {isLogin ? 'Đăng nhập' : 'Đăng ký'}
+                {isLoading && (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                <span>{isLoading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Đăng ký')}</span>
               </motion.button>
 
               {/* Forgot Password (only for login) */}
               {isLogin && (
                 <motion.button
                   type="button"
+                  onClick={handleForgotPassword}
+                  disabled={isLoading}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  whileHover={{ 
+                  whileHover={!isLoading ? { 
                     scale: 1.02,
                     boxShadow: "0 8px 20px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)"
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200 mb-4 md:mb-6"
+                  } : {}}
+                  whileTap={!isLoading ? { scale: 0.98 } : {}}
+                  className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 mb-4 md:mb-6 ${
+                    isLoading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
                   Quên mật khẩu?
                 </motion.button>
@@ -460,6 +650,38 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
 
         </div>
       </motion.div>
+
+      {/* OTP Verification Modal (for Register) */}
+      <AnimatePresence>
+        {showOTP && (
+          <OTPVerification
+            email={formData.email}
+            onSuccess={handleOTPSuccess}
+            onBack={handleOTPBack}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showForgotPassword && (
+          <ForgotPasswordModal
+            onClose={handleForgotPasswordClose}
+            onSubmit={handleForgotPasswordSubmit}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* OTP Verification Modal (for Forgot Password) */}
+      <AnimatePresence>
+        {showForgotPasswordOTP && (
+          <OTPVerification
+            email={forgotPasswordEmail}
+            onSuccess={handleForgotPasswordOTPSuccess}
+            onBack={handleForgotPasswordOTPBack}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
