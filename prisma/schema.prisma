@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Users {
+  user_id           Int       @id @default(autoincrement())
+  email             String    @unique
+  password_hash     String
+  full_name         String
+  phone_number      String?
+  avatar_url        String?
+  date_of_birth     DateTime?
+  gender            String?
+  address           String?
+  status            String    @default("active")
+  email_verified    Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  last_login        DateTime?
+
+  admin    Admins?
+  student  Students?
+  teacher  Teachers?
+
+  user_roles              User_Roles[]
+  password_reset_tokens   Password_Reset_Tokens[]
+  email_verifications     Email_Verifications[]
+  user_otps               User_OTPs[]     // 🆕 Thêm bảng OTP
+}
+
+model Admins {
+  admin_id   Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  manage_users         Boolean?
+  manage_roles         Boolean?
+  manage_system_settings Boolean?
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Students {
+  student_id     Int      @id @default(autoincrement())
+  user_id        Int      @unique
+  school         String?
+  major          String?
+  specialization String?
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Teachers {
+  teacher_id Int @id @default(autoincrement())
+  user_id    Int @unique
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  teaching_experiences Teaching_Experiences[]
+}
+
+model Teaching_Experiences {
+  experience_id Int @id @default(autoincrement())
+  teacher_id    Int
+  school_name   String
+  subject       String
+  start_date    DateTime
+  end_date      DateTime?
+
+  teacher Teachers @relation(fields: [teacher_id], references: [teacher_id], onDelete: Cascade)
+}
+
+model Roles {
+  role_id     Int       @id @default(autoincrement())
+  role_name   String    @unique
+  description String?
+  created_at  DateTime  @default(now())
+
+  user_roles  User_Roles[]
+}
+
+model User_Roles {
+  user_role_id Int      @id @default(autoincrement())
+  user_id      Int
+  role_id      Int
+  assigned_at  DateTime @default(now())
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  role Roles @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+
+  @@unique([user_id, role_id])
+}
+
+model Password_Reset_Tokens {
+  token_id   Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Email_Verifications {
+  verification_id Int      @id @default(autoincrement())
+  user_id         Int
+  token           String   @unique
+  expires_at      DateTime
+  verified        Boolean  @default(false)
+  created_at      DateTime @default(now())
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+// 🆕 Bảng cho OTP
+model User_OTPs {
+  otp_id     Int      @id @default(autoincrement())
+  user_id    Int
+  code       String   // mã OTP (ví dụ: "123456")
+  purpose    String   // 'login', 'verify_email', 'reset_password', ...
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, purpose])
+}
