@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Smart Learning TKM',
   description: 'Hệ thống học tập thông minh',
+  icons: {
+    icon: '/small_logo.png',
+    shortcut: '/small_logo.png',
+    apple: '/small_logo.png',
+  },
 }
 
 export default function RootLayout({
@@ -18,6 +23,8 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <head>
+        <link rel="icon" href="/small_logo.png" sizes="any" />
+        <link rel="apple-touch-icon" href="/small_logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
