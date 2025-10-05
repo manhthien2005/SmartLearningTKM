@@ -11,7 +11,7 @@ interface OTPVerificationProps {
 }
 
 const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onBack }) => {
-  const [otp, setOtp] = useState<string[]>(['', '', '', '', ''])
+  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', ''])
   const [countdown, setCountdown] = useState(30)
   const [canResend, setCanResend] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -45,12 +45,12 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
     setOtp(newOtp)
 
     // Auto-focus next input
-    if (value && index < 4) {
+    if (value && index < 5) {
       inputRefs.current[index + 1]?.focus()
     }
 
     // Auto-verify when all fields are filled
-    if (newOtp.every(digit => digit !== '') && index === 4) {
+    if (newOtp.every(digit => digit !== '') && index === 5) {
       handleVerify(newOtp)
     }
   }
@@ -63,13 +63,13 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
-    const pastedData = e.clipboardData.getData('text').slice(0, 5)
+    const pastedData = e.clipboardData.getData('text').slice(0, 6)
     
     if (!/^\d+$/.test(pastedData)) return
 
     const newOtp = [...otp]
     pastedData.split('').forEach((char, index) => {
-      if (index < 5) {
+      if (index < 6) {
         newOtp[index] = char
       }
     })
@@ -77,7 +77,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
     setOtp(newOtp)
 
     // Focus last filled input or first empty
-    const lastIndex = Math.min(pastedData.length, 4)
+    const lastIndex = Math.min(pastedData.length, 5)
     inputRefs.current[lastIndex]?.focus()
 
     // Auto-verify if complete
@@ -96,7 +96,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Mock verification - replace with actual logic
-      const isValid = otpCode === '12345' // For demo purposes
+      const isValid = otpCode === '123456' // For demo purposes
 
       if (isValid) {
         // Success animation
@@ -122,7 +122,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
         // Reset after animation
         setTimeout(() => {
           setStatus('idle')
-          setOtp(['', '', '', '', ''])
+          setOtp(['', '', '', '', '', ''])
           setIsVerifying(false)
           inputRefs.current[0]?.focus()
         }, 1500)
@@ -136,7 +136,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
       
       setTimeout(() => {
         setStatus('idle')
-        setOtp(['', '', '', '', ''])
+        setOtp(['', '', '', '', '', ''])
         setIsVerifying(false)
         inputRefs.current[0]?.focus()
       }, 1500)
@@ -164,7 +164,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
 
       setCountdown(30)
       setCanResend(false)
-      setOtp(['', '', '', '', ''])
+      setOtp(['', '', '', '', '', ''])
       inputRefs.current[0]?.focus()
     } catch (error) {
       toast.error('Không thể gửi lại OTP', {
