@@ -56,3 +56,4 @@ src/
 public/index.html
 /generated/prisma
 
+package-lock.json
