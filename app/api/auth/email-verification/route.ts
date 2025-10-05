@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         where: {
           user_id: user.user_id,
           code: otp,
-          purpose: "verify_email",
+          purpose: { in: ["verify_email", "login"] },
           used: false,
         },
       });
