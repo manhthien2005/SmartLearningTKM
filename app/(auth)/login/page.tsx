@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import CloudBackground from '@/components/CloudBackground'
 import RoleCard from '@/components/RoleCard'
 import LoginForm from '@/components/LoginForm'
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
+  const router = useRouter()
 
   const roles = [
     {
@@ -30,6 +32,10 @@ export default function LoginPage() {
     setSelectedRole(null)
   }
 
+  const handleLogoClick = () => {
+    router.push('/')
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background */}
@@ -49,7 +55,8 @@ export default function LoginPage() {
               <img 
                 src="/logo-slearn.png" 
                 alt="Smart Learning Logo" 
-                className="h-16 md:h-20 w-auto"
+                className="h-16 md:h-20 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
+                onClick={handleLogoClick}
               />
             </div>
             <h1 className="text-2xl md:text-3xl font-semibold text-education-dark mb-2" style={{ fontFamily: "'Lexend', sans-serif" }}>
