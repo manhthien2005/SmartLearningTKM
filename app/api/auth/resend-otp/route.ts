@@ -13,15 +13,15 @@ export async function POST(req: Request) {
     const { email } = await req.json();
 
     if (!email)
-      return NextResponse.json({ message: "Missing email" }, { status: 400 });
+      return NextResponse.json({ message: "Không tìm thấy email" }, { status: 400 });
 
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user)
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+      return NextResponse.json({ message: "Không tìm thấy người dùng" }, { status: 404 });
 
     if (user.status === "active")
-      return NextResponse.json({ message: "Email already verified" }, { status: 400 });
+      return NextResponse.json({ message: "Email đã được xác thực" }, { status: 400 });
 
     // 🔢 Tạo OTP mới
     const otp = generateOTP();
@@ -53,12 +53,12 @@ export async function POST(req: Request) {
       `,
     });
 
-    return NextResponse.json({ message: "OTP resent successfully" });
+    return NextResponse.json({ message: "Gửi lại OTP thành công" });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ Error in resend-otp API:", error);
     return NextResponse.json(
-      { message: "Server error", error: error.message || error.toString() },
+      { message: "Lỗi hệ thống", error: error.message || error.toString() },
       { status: 500 }
     );
   }

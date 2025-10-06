@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.users.findUnique({ where: { email } });
     if (!user)
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+      return NextResponse.json({ message: "Không tìm thấy người dùng" }, { status: 404 });
 
     // ✅ 1️⃣ Xác thực bằng OTP
     if (otp) {
@@ -23,10 +23,10 @@ export async function POST(req: Request) {
       });
 
       if (!record)
-        return NextResponse.json({ message: "Invalid OTP" }, { status: 400 });
+        return NextResponse.json({ message: "OTP không hợp lệ" }, { status: 400 });
 
       if (record.expires_at < new Date()) {
-        return NextResponse.json({ message: "OTP expired" }, { status: 400 });
+        return NextResponse.json({ message: "OTP đã hết hạn" }, { status: 400 });
       }
 
       await prisma.users.update({
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         data: { used: true },
       });
 
-      return NextResponse.json({ message: "Email verified via OTP" });
+      return NextResponse.json({ message: "Email xác thực thành công" });
     }
 
     // ✅ 2️⃣ Xác thực bằng Token
@@ -53,10 +53,10 @@ export async function POST(req: Request) {
       });
 
       if (!record)
-        return NextResponse.json({ message: "Invalid token" }, { status: 400 });
+        return NextResponse.json({ message: "Token không hợp lệ" }, { status: 400 });
 
       if (record.expires_at < new Date()) {
-        return NextResponse.json({ message: "Token expired" }, { status: 400 });
+        return NextResponse.json({ message: "Token đã hết hạn" }, { status: 400 });
       }
 
       await prisma.users.update({
@@ -69,16 +69,16 @@ export async function POST(req: Request) {
         data: { verified: true },
       });
 
-      return NextResponse.json({ message: "Email verified via Token" });
+      return NextResponse.json({ message: "Email đã xác thực" });
     }
 
     // ❌ Nếu thiếu cả hai
-    return NextResponse.json({ message: "Missing OTP or token" }, { status: 400 });
+    return NextResponse.json({ message: "Thiếu OTP hoặc token" }, { status: 400 });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ Error in email verification:", error);
     return NextResponse.json(
-      { message: "Server error", error: error.message || error.toString() },
+      { message: "Lỗi hệ thống", error: error.message || error.toString() },
       { status: 500 }
     );
   }
