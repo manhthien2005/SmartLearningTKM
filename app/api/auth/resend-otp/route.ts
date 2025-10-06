@@ -54,6 +54,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ message: "OTP resent successfully" });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ Error in resend-otp API:", error);
     return NextResponse.json(

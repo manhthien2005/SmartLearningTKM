@@ -74,6 +74,7 @@ export async function POST(req: Request) {
 
     // ❌ Nếu thiếu cả hai
     return NextResponse.json({ message: "Missing OTP or token" }, { status: 400 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ Error in email verification:", error);
     return NextResponse.json(

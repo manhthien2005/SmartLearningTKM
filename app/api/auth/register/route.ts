@@ -11,7 +11,7 @@ function generateOTP(length = 6) {
 
 export async function POST(req: Request) {
   try {
-    const { email, password, full_name } = await req.json();
+    const { email, password, full_name} = await req.json();
 
     // Kiểm tra trùng email
     const existing = await prisma.users.findUnique({ where: { email } });
@@ -55,6 +55,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: "User created successfully. Please verify your email via OTP.",
     });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("❌ Error in register API:", error);
     return NextResponse.json(

@@ -53,6 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: "Đã gửi OTP về email. Vui lòng nhập OTP để xác thực đăng nhập.",
     });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return NextResponse.json({ message: "Server error", error: error.message }, { status: 500 });
   }
