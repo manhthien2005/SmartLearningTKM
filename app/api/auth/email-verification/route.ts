@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { createSession } from "@/lib/auth/session";
+import { parseDeviceInfo } from "@/lib/auth/device";
 
 const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { email, otp, token } = await req.json();
+    const { email, otp, token, rememberDevice, deviceToken } = await req.json();
+
+    if (!email) {
+      return NextResponse.json({ message: "Email không được để trống" }, { status: 400 });
+    }
 
     const user = await prisma.users.findUnique({ where: { email } });
     if (!user)
@@ -39,7 +45,66 @@ export async function POST(req: Request) {
         data: { used: true },
       });
 
-      return NextResponse.json({ message: "Email xác thực thành công" });
+      // 🔐 Lưu thiết bị tin cậy nếu user chọn "Ghi nhớ đăng nhập"
+      if (rememberDevice && deviceToken && record.purpose === "login") {
+        const userAgent = req.headers.get('user-agent') || 'Unknown';
+        const deviceInfo = parseDeviceInfo(userAgent);
+
+        // Kiểm tra thiết bị đã tồn tại chưa
+        const existingDevice = await prisma.trusted_Devices.findFirst({
+          where: {
+            user_id: user.user_id,
+            device_token: deviceToken,
+          },
+        });
+
+        if (existingDevice) {
+          // Cập nhật thời gian hết hạn (30 ngày từ bây giờ)
+          await prisma.trusted_Devices.update({
+            where: { device_id: existingDevice.device_id },
+            data: {
+              last_used: new Date(),
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ngày
+            },
+          });
+        } else {
+          // Tạo mới thiết bị tin cậy
+          await prisma.trusted_Devices.create({
+            data: {
+              user_id: user.user_id,
+              device_token: deviceToken,
+              device_name: deviceInfo.device_name,
+              device_type: deviceInfo.device_type,
+              user_agent: userAgent,
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ngày
+            },
+          });
+        }
+      }
+
+      // Get user role for session
+      const userRole = await prisma.user_Roles.findFirst({
+        where: { user_id: user.user_id },
+        include: { role: true }
+      });
+
+      // Create session
+      await createSession({
+        user_id: user.user_id.toString(),
+        email: user.email,
+        role: userRole?.role.role_name || 'Student',
+        full_name: user.full_name,
+      });
+
+      return NextResponse.json({ 
+        message: "Email xác thực thành công",
+        user: {
+          id: user.user_id,
+          email: user.email,
+          full_name: user.full_name,
+          role: userRole?.role.role_name || 'Student'
+        }
+      });
     }
 
     // ✅ 2️⃣ Xác thực bằng Token
@@ -69,7 +134,29 @@ export async function POST(req: Request) {
         data: { verified: true },
       });
 
-      return NextResponse.json({ message: "Email đã xác thực" });
+      // Get user role for session
+      const userRole = await prisma.user_Roles.findFirst({
+        where: { user_id: user.user_id },
+        include: { role: true }
+      });
+
+      // Create session
+      await createSession({
+        user_id: user.user_id.toString(),
+        email: user.email,
+        role: userRole?.role.role_name || 'Student',
+        full_name: user.full_name,
+      });
+
+      return NextResponse.json({ 
+        message: "Email đã xác thực",
+        user: {
+          id: user.user_id,
+          email: user.email,
+          full_name: user.full_name,
+          role: userRole?.role.role_name || 'Student'
+        }
+      });
     }
 
     // ❌ Nếu thiếu cả hai

@@ -37,7 +37,8 @@ model Users {
   user_roles              User_Roles[]
   password_reset_tokens   Password_Reset_Tokens[]
   email_verifications     Email_Verifications[]
-  user_otps               User_OTPs[]     // 🆕 Thêm bảng OTP
+  user_otps               User_OTPs[]           // 🆕 Thêm bảng OTP
+  trusted_devices         Trusted_Devices[]     // 🆕 Thêm bảng Trusted Devices
 }
 
 model Admins {
@@ -135,4 +136,23 @@ model User_OTPs {
   user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@index([user_id, purpose])
+}
+
+// 🆕 Bảng cho Trusted Devices - Ghi nhớ thiết bị
+model Trusted_Devices {
+  device_id       Int      @id @default(autoincrement())
+  user_id         Int
+  device_token    String   @unique  // Token định danh thiết bị (fingerprint)
+  device_name     String?  // Tên thiết bị (vd: "Chrome on Windows")
+  device_type     String?  // Loại thiết bị: "desktop", "mobile", "tablet"
+  user_agent      String?  // User agent string
+  ip_address      String?  // IP address
+  last_used       DateTime @default(now())
+  expires_at      DateTime // Hết hạn sau 30 ngày
+  created_at      DateTime @default(now())
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, device_token])
+  @@index([expires_at])
 }
