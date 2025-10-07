@@ -184,25 +184,44 @@ export default function Sidebar({ role }: SidebarProps) {
   const showExpanded = (!isCollapsed || isHovered) && !isTransitioning;
 
   // Handle logout
-  const handleLogout = () => {
-    // TODO: Clear authentication tokens/session
-    localStorage.removeItem('authToken');
-    sessionStorage.clear();
-    
-    // Show success toast using react-hot-toast
-    toast.success('Đăng xuất thành công!', {
-      position: 'bottom-right',
-      duration: 3000,
-      style: {
-        background: '#10b981',
-        color: '#fff',
-        fontWeight: '500',
-      },
-    });
-    
-    // Redirect to homepage
-    router.push('/');
-    setShowLogoutModal(false);
+  const handleLogout = async () => {
+    try {
+      // Call logout API to clear session cookie
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Clear local storage
+        localStorage.removeItem('authToken');
+        sessionStorage.clear();
+        
+        // Show success toast
+        toast.success('Đăng xuất thành công!', {
+          position: 'bottom-right',
+          duration: 3000,
+          style: {
+            background: '#10b981',
+            color: '#fff',
+            fontWeight: '500',
+          },
+        });
+        
+        // Redirect to login page
+        router.push('/login');
+        setShowLogoutModal(false);
+      } else {
+        throw new Error('Logout failed');
+      }
+    } catch (error) {
+      toast.error('Lỗi khi đăng xuất', {
+        position: 'bottom-right',
+        duration: 3000,
+      });
+    }
   };
 
   return (

@@ -11,7 +11,18 @@ export function generateOTP(length = 6) {
 export async function registerBaseUser(email: string, password: string, full_name: string) {
   // Kiểm tra trùng email
   const existing = await prisma.users.findUnique({ where: { email } });
-  if (existing) throw new Error("Email already exists");
+  
+  // Nếu email đã tồn tại và chưa xác thực, xóa tài khoản cũ để cho phép đăng ký lại
+  if (existing) {
+    if (existing.status === 'pending' && !existing.email_verified) {
+      // Xóa tài khoản chưa xác thực (cascade sẽ xóa các bảng liên quan)
+      await prisma.users.delete({ where: { user_id: existing.user_id } });
+      console.log(`🗑️ Đã xóa tài khoản chưa xác thực: ${email}`);
+    } else {
+      // Tài khoản đã xác thực hoặc đang active
+      throw new Error("Email đã tồn tại trong hệ thống");
+    }
+  }
 
   const password_hash = await bcrypt.hash(password, 10);
 

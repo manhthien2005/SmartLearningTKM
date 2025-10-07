@@ -4,11 +4,14 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import Image from 'next/image'
 import OTPVerification from './OTPVerification'
 import ForgotPasswordModal from './ForgotPasswordModal'
+import { getDeviceToken } from '@/lib/device-fingerprint'
 
 // Type declaration for dotlottie-wc Web Component
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       'dotlottie-wc': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
@@ -61,6 +64,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'desktop'>('small')
+  const [pendingLoginData, setPendingLoginData] = useState<{
+    email: string;
+    deviceToken: string;
+    rememberDevice: boolean;
+  } | null>(null)
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -114,35 +122,80 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
 
     try {
       if (isLogin) {
-        // Handle Login
-        // TODO: Replace with actual API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Mock successful login
-        toast.success('Đăng nhập thành công!', {
-          position: 'bottom-right',
-          duration: 3000,
-          icon: '🎉',
-          style: {
-            background: '#10b981',
-            color: '#fff',
-            fontWeight: '500',
-            borderRadius: '12px',
-            padding: '16px',
+        // Lấy device token hiện tại
+        const deviceToken = await getDeviceToken()
+
+        // Handle Login - Send OTP hoặc skip nếu là trusted device
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            rememberDevice: rememberMe,
+            deviceToken: deviceToken,
+            selectedRole: selectedRole, // Gửi role đã chọn từ UI
+          }),
         })
 
-        // Redirect based on role after short delay
-        setTimeout(() => {
-          if (selectedRole === 'student') {
-            router.push('/student')
-          } else if (selectedRole === 'teacher') {
-            router.push('/teacher')
+        const data = await response.json()
+
+        if (response.ok) {
+          // Kiểm tra xem có bỏ qua OTP không (trusted device)
+          if (data.skipOTP) {
+            // Thiết bị tin cậy - đăng nhập thành công luôn
+            toast.success('Đăng nhập thành công từ thiết bị đã tin cậy! 🎉', {
+              position: 'bottom-right',
+              duration: 3000,
+              icon: '✅',
+              style: {
+                background: '#10b981',
+                color: '#fff',
+                fontWeight: '500',
+                borderRadius: '12px',
+                padding: '16px',
+              },
+            })
+
+            // Redirect based on role
+            setTimeout(() => {
+              if (selectedRole === 'student') {
+                router.push('/student')
+              } else if (selectedRole === 'teacher') {
+                router.push('/teacher')
+              }
+            }, 1000)
+          } else {
+            // Thiết bị chưa tin cậy - hiển thị OTP
+            // Lưu thông tin để xử lý sau khi verify OTP
+            setPendingLoginData({
+              email: formData.email,
+              deviceToken: data.deviceToken || deviceToken,
+              rememberDevice: rememberMe,
+            })
+
+            setShowOTP(true)
+            
+            toast.success('Mã OTP đã được gửi đến email của bạn', {
+              position: 'bottom-right',
+              duration: 3000,
+              style: {
+                background: '#0ea5e9',
+                color: '#fff',
+                fontWeight: '500',
+                borderRadius: '12px',
+                padding: '16px',
+              },
+            })
           }
-        }, 1000)
+          setIsLoading(false)
+        } else {
+          throw new Error(data.message || 'Đăng nhập thất bại')
+        }
       } else {
-        // Handle Register - only show OTP for students
-        if (selectedRole === 'student') {
+        // Handle Register
           // Validate password confirmation
           if (formData.password !== formData.confirmPassword) {
             toast.error('Mật khẩu xác nhận không khớp!', {
@@ -153,10 +206,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
             return
           }
 
-          // TODO: Replace with actual API call to send OTP
-          await new Promise(resolve => setTimeout(resolve, 500))
-          
-          // Show OTP verification
+        // Call register API based on role
+        const endpoint = selectedRole === 'student' 
+          ? '/api/auth/register/student' 
+          : '/api/auth/register/lecturer'
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            full_name: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          // Show OTP verification for all roles during registration
           setShowOTP(true)
           
           toast.success('Mã OTP đã được gửi đến email của bạn', {
@@ -172,26 +243,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
           })
           setIsLoading(false)
         } else {
-          // For teacher - direct registration without OTP
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-          toast.success('Đăng ký thành công!', {
-            position: 'bottom-right',
-            duration: 3000,
-            icon: '🎉',
-          })
-
-          setTimeout(() => {
-            router.push('/teacher')
-          }, 1000)
+          throw new Error(data.message || 'Đăng ký thất bại')
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoading(false)
       
-      toast.error(isLogin ? 'Đăng nhập thất bại!' : 'Đăng ký thất bại!', {
+      // Display specific error message from API or generic message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (isLogin ? 'Đăng nhập thất bại!' : 'Đăng ký thất bại!')
+      
+      toast.error(errorMessage, {
         position: 'bottom-right',
-        duration: 4000,
+        duration: 5000, // Tăng thời gian hiển thị cho thông báo lỗi role
         style: {
           background: '#ef4444',
           color: '#fff',
@@ -217,9 +282,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
       },
     })
 
-    // Redirect to student dashboard
+    // Redirect based on selected role
     setTimeout(() => {
+      if (selectedRole === 'student') {
       router.push('/student')
+      } else if (selectedRole === 'teacher') {
+        router.push('/teacher')
+      }
     }, 500)
   }
 
@@ -317,9 +386,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
               transition={{ delay: 0.1, duration: 0.5 }}
               className="mb-6 md:mb-8 mt-4 md:mt-0"
             >
-              <img 
+              <Image 
                 src="/logo-slearn.png" 
                 alt="SLearn" 
+                width={160}
+                height={40}
                 className="h-8 md:h-10 w-auto object-contain"
                 onError={(e) => {
                   // Fallback nếu không có logo
@@ -651,13 +722,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onBack }) => {
         </div>
       </motion.div>
 
-      {/* OTP Verification Modal (for Register) */}
+      {/* OTP Verification Modal (for Register/Login) */}
       <AnimatePresence>
         {showOTP && (
           <OTPVerification
             email={formData.email}
             onSuccess={handleOTPSuccess}
             onBack={handleOTPBack}
+            rememberDevice={pendingLoginData?.rememberDevice || false}
+            deviceToken={pendingLoginData?.deviceToken || ''}
           />
         )}
       </AnimatePresence>

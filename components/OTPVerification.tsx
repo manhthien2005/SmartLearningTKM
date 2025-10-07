@@ -8,9 +8,11 @@ interface OTPVerificationProps {
   email: string
   onSuccess: () => void
   onBack: () => void
+  rememberDevice?: boolean
+  deviceToken?: string
 }
 
-const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onBack }) => {
+const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onBack, rememberDevice, deviceToken }) => {
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', ''])
   const [countdown, setCountdown] = useState(30)
   const [canResend, setCanResend] = useState(false)
@@ -91,14 +93,23 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
     const otpCode = otpToVerify.join('')
 
     try {
-      // TODO: Replace with actual API call
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Call email verification API
+      const response = await fetch('/api/auth/email-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          otp: otpCode,
+          rememberDevice: rememberDevice,
+          deviceToken: deviceToken,
+        }),
+      })
 
-      // Mock verification - replace with actual logic
-      const isValid = otpCode === '123456' // For demo purposes
+      const data = await response.json()
 
-      if (isValid) {
+      if (response.ok) {
         // Success animation
         setStatus('success')
         
@@ -109,7 +120,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
       } else {
         // Error animation
         setStatus('error')
-        toast.error('Mã OTP không chính xác', {
+        toast.error(data.message || 'Mã OTP không chính xác', {
           position: 'bottom-right',
           duration: 4000,
           style: {
@@ -149,23 +160,40 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
     setIsResending(true)
 
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      toast.success('Đã gửi lại mã OTP', {
-        position: 'bottom-right',
-        duration: 3000,
-        style: {
-          background: '#10b981',
-          color: '#fff',
-          fontWeight: '500',
+      // Call resend OTP API
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: email,
+        }),
       })
 
-      setCountdown(30)
-      setCanResend(false)
-      setOtp(['', '', '', '', '', ''])
-      inputRefs.current[0]?.focus()
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('Đã gửi lại mã OTP', {
+          position: 'bottom-right',
+          duration: 3000,
+          style: {
+            background: '#10b981',
+            color: '#fff',
+            fontWeight: '500',
+          },
+        })
+
+        setCountdown(30)
+        setCanResend(false)
+        setOtp(['', '', '', '', '', ''])
+        inputRefs.current[0]?.focus()
+      } else {
+        toast.error(data.message || 'Không thể gửi lại OTP', {
+          position: 'bottom-right',
+          duration: 3000,
+        })
+      }
     } catch (error) {
       toast.error('Không thể gửi lại OTP', {
         position: 'bottom-right',
@@ -177,7 +205,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onSuccess, onB
   }
 
   const getInputClassName = (index: number) => {
-    let baseClass = "w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-300 focus:outline-none bg-white"
+    const baseClass = "w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-300 focus:outline-none bg-white"
     
     if (status === 'success') {
       return `${baseClass} border-green-500 text-green-600`
