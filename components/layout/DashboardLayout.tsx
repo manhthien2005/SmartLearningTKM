@@ -2,6 +2,7 @@
 
 import { ReactNode, useState, useEffect, useCallback } from 'react';
 import Sidebar from './Sidebar';
+import { NotificationBell, ProfileDropdown } from '@/components/notifications';
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -69,6 +70,15 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           willChange: 'margin-left, width' // Optimize for layout changes
         }}
       >
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-2.5 flex items-center justify-end h-12">
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <ProfileDropdown role={role} />
+          </div>
+        </header>
+
+        {/* Main Content */}
         <div className="p-4 lg:p-6 w-full min-w-0 max-w-full overflow-x-hidden">
           <div className="w-full min-w-0 max-w-full overflow-x-hidden">
             {children}
