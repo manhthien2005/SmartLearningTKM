@@ -39,6 +39,9 @@ model Users {
   email_verifications     Email_Verifications[]
   user_otps               User_OTPs[]           // 🆕 Thêm bảng OTP
   trusted_devices         Trusted_Devices[]     // 🆕 Thêm bảng Trusted Devices
+  notifications           Notifications[]       // 🆕 Thông báo nhận được
+  notification_actors     Notifications[] @relation("NotificationActor") // 🆕 Thông báo tạo ra
+  notification_settings   Notification_Settings? // 🆕 Cài đặt thông báo
 }
 
 model Admins {
@@ -155,4 +158,46 @@ model Trusted_Devices {
 
   @@index([user_id, device_token])
   @@index([expires_at])
+}
+
+// 🆕 Bảng Thông báo
+model Notifications {
+  notification_id   Int      @id @default(autoincrement())
+  user_id          Int      // Người nhận thông báo
+  actor_id         Int?     // Người gây ra hành động (có thể null cho system notifications)
+  type             String   // 'forum_reply', 'assignment_graded', 'mention', 'system', etc.
+  title            String   // Tiêu đề ngắn gọn
+  content          String   // Nội dung chi tiết
+  data             Json?    // Dữ liệu bổ sung (post_id, assignment_id, etc.)
+  is_read          Boolean  @default(false)
+  created_at       DateTime @default(now())
+  read_at          DateTime?
+
+  user  Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  actor Users? @relation("NotificationActor", fields: [actor_id], references: [user_id], onDelete: SetNull)
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
+  @@index([type])
+}
+
+// 🆕 Cài đặt thông báo của người dùng
+model Notification_Settings {
+  settings_id           Int     @id @default(autoincrement())
+  user_id              Int     @unique
+  
+  // Thông báo trên web
+  web_forum_reply      Boolean @default(true)   // Khi ai đó trả lời bài viết
+  web_mention          Boolean @default(true)   // Khi được mention
+  web_assignment_grade Boolean @default(true)   // Khi bài tập được chấm điểm
+  web_system           Boolean @default(true)   // Thông báo hệ thống
+  
+  // Thông báo email
+  email_important      Boolean @default(true)   // Email cho hoạt động quan trọng
+  email_weekly_summary Boolean @default(false)  // Email tổng hợp hàng tuần
+  
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  user Users @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }

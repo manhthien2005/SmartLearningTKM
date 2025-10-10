@@ -11,7 +11,7 @@ export { default as CommentSection } from './CommentSection';
 export { default as PostDetailModal } from './PostDetailModal';
 export { default as LoadingSkeleton } from './LoadingSkeleton';
 export { default as EmptyState } from './EmptyState';
-export { default as ToastProvider, useToast } from './ToastProvider';
+// ToastProvider moved to @/components/ui
 
 // Types
 export type { ForumPostData } from './ForumPost';

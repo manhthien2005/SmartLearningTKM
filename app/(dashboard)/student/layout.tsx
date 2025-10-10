@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import DashboardLayout from '@/components/DashboardLayout';
+import { DashboardLayout } from '@/components/layout';
 
 export const metadata: Metadata = {
   title: 'Dashboard Sinh Viên - Smart Learning TKM',

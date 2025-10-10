@@ -3,9 +3,8 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import CloudBackground from '@/components/CloudBackground'
-import RoleCard from '@/components/RoleCard'
-import LoginForm from '@/components/LoginForm'
+import { CloudBackground } from '@/components/ui'
+import { RoleCard, LoginForm } from '@/components/auth'
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null)

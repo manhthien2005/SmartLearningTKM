@@ -2,24 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { usePathname } from 'next/navigation';
 import {
   HomeIcon,
   BookOpenIcon,
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
-  Cog6ToothIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   AcademicCapIcon,
   ClipboardDocumentListIcon,
   UsersIcon,
-  UserCircleIcon,
   SparklesIcon,
   DocumentMagnifyingGlassIcon,
   PlusCircleIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -55,9 +51,7 @@ export default function Sidebar({ role }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true); // Mặc định collapsed
   const [isHovered, setIsHovered] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   // Debounce hover để tránh giật
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -183,47 +177,6 @@ export default function Sidebar({ role }: SidebarProps) {
   const navSections = role === 'student' ? studentNavSections : teacherNavSections;
   const showExpanded = (!isCollapsed || isHovered) && !isTransitioning;
 
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      // Call logout API to clear session cookie
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        // Clear local storage
-        localStorage.removeItem('authToken');
-        sessionStorage.clear();
-        
-        // Show success toast
-        toast.success('Đăng xuất thành công!', {
-          position: 'bottom-right',
-          duration: 3000,
-          style: {
-            background: '#10b981',
-            color: '#fff',
-            fontWeight: '500',
-          },
-        });
-        
-        // Redirect to login page
-        router.push('/login');
-        setShowLogoutModal(false);
-      } else {
-        throw new Error('Logout failed');
-      }
-    } catch (error) {
-      toast.error('Lỗi khi đăng xuất', {
-        position: 'bottom-right',
-        duration: 3000,
-      });
-    }
-  };
-
   return (
     <aside
       className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-200 ease-out z-40 overflow-hidden ${
@@ -346,85 +299,7 @@ export default function Sidebar({ role }: SidebarProps) {
           </div>
         </nav>
 
-        {/* User Profile Section */}
-        <div className="border-t border-gray-200 p-2 flex-shrink-0">
-          <div className="rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-150 group relative w-full h-12">
-            <Link href={`/${role}/profile`} className="flex items-center w-full h-full">
-              {/* Avatar với position cố định */}
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 absolute left-2">
-                <span className="text-white font-semibold text-xs">T</span>
-              </div>
-              
-              {/* Profile info với padding-left cố định */}
-              {showExpanded && (
-                <div className="pl-10 pr-12 py-2 flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-sm overflow-hidden whitespace-nowrap">Mr. Thiên</p>
-                  <p className="text-xs text-gray-500 capitalize overflow-hidden whitespace-nowrap">{role === 'student' ? 'Sinh Viên' : 'Giảng Viên'}</p>
-                </div>
-              )}
-            </Link>
-            
-            {/* Settings và Logout Buttons với position cố định */}
-            {showExpanded && (
-              <div className="flex items-center gap-1 absolute right-2 top-1/2 transform -translate-y-1/2">
-                <Link
-                  href={`/${role}/settings`}
-                  className="p-1.5 hover:bg-gray-200 rounded-md transition-colors flex-shrink-0"
-                  title="Cài Đặt"
-                >
-                  <Cog6ToothIcon className="w-4 h-4 text-gray-500 hover:text-gray-700 flex-shrink-0" />
-                </Link>
-                 <button
-                   onClick={() => setShowLogoutModal(true)}
-                   className="p-1.5 hover:bg-red-100 rounded-md transition-colors flex-shrink-0"
-                   title="Đăng Xuất"
-                 >
-                   <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-400 hover:text-red-600 flex-shrink-0" />
-                 </button>
-              </div>
-            )}
-            
-            {/* Tooltip khi collapsed */}
-            {!showExpanded && (
-              <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50">
-                Mr. Thiên ({role === 'student' ? 'Sinh Viên' : 'Giảng Viên'})
-              </div>
-            )}
-          </div>
-        </div>
       </div>
-
-      {/* Logout Confirmation Modal */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <ArrowRightOnRectangleIcon className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Xác Nhận Đăng Xuất</h3>
-                <p className="text-sm text-gray-500">Bạn có chắc chắn muốn đăng xuất không?</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors"
-              >
-                Đăng Xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }

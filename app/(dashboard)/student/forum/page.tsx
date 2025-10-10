@@ -1,14 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import ForumBreadcrumb from '@/components/forum/ForumBreadcrumb';
-import CreatePostCard from '@/components/forum/CreatePostCard';
-import ForumFilter, { SortOption } from '@/components/forum/ForumFilter';
-import ForumPost, { ForumPostData } from '@/components/forum/ForumPost';
-import ForumStats, { ForumStatsData } from '@/components/forum/ForumStats';
-import TagsWidget, { TagData } from '@/components/forum/TagsWidget';
-import CommunityWidget, { CommunityMember } from '@/components/forum/CommunityWidget';
-import PostDetailModal from '@/components/forum/PostDetailModal';
+import { 
+  ForumBreadcrumb, 
+  CreatePostCard, 
+  ForumFilter, 
+  ForumPost, 
+  ForumStats, 
+  TagsWidget, 
+  CommunityWidget, 
+  PostDetailModal,
+  type SortOption,
+  type ForumPostData,
+  type ForumStatsData,
+  type TagData,
+  type CommunityMember
+} from '@/components/forum';
 
 export default function StudentForumPage() {
   const [sortBy, setSortBy] = useState<SortOption>('hot');
