@@ -30,7 +30,7 @@ export default function DebugDevicePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-[#f5f5fa] p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">🔍 Debug Device Token</h1>
 
