@@ -57,7 +57,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
   }, [handleSidebarChange]);
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen bg-[#f5f5fa] overflow-x-hidden">
       <Sidebar role={role} />
       <main 
         className="transition-all duration-200 ease-out overflow-x-hidden"
