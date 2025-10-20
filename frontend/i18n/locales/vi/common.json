@@ -1,0 +1,51 @@
+{
+  "app_name": "SmartLearning",
+  "welcome": "Xin chào",
+  "login": "Đăng nhập",
+  "logout": "Đăng xuất",
+  "register": "Đăng ký",
+  "email": "Email",
+  "password": "Mật khẩu",
+  "confirm_password": "Xác nhận mật khẩu",
+  "full_name": "Họ và tên",
+  "submit": "Gửi",
+  "cancel": "Hủy",
+  "save": "Lưu",
+  "edit": "Chỉnh sửa",
+  "delete": "Xóa",
+  "loading": "Đang tải...",
+  "error": "Lỗi",
+  "success": "Thành công",
+  "student": "Sinh viên",
+  "teacher": "Giảng viên",
+  "admin": "Quản trị viên",
+  "dashboard": "Trang chủ",
+  "courses": "Khóa học",
+  "documents": "Tài liệu",
+  "forum": "Diễn đàn",
+  "notifications": "Thông báo",
+  "profile": "Hồ sơ",
+  "settings": "Cài đặt",
+  "remember_device": "Ghi nhớ thiết bị này",
+  "forgot_password": "Quên mật khẩu?",
+  "dont_have_account": "Chưa có tài khoản?",
+  "already_have_account": "Đã có tài khoản?",
+  "verify_email": "Xác thực email",
+  "enter_otp": "Nhập mã OTP",
+  "resend_otp": "Gửi lại OTP",
+  "otp_sent": "Mã OTP đã được gửi về email của bạn",
+  "login_success": "Đăng nhập thành công",
+  "logout_success": "Đăng xuất thành công",
+  "register_success": "Đăng ký thành công",
+  "verify_success": "Xác thực thành công"
+}
+
+
+
+
+
+
+
+
+
+

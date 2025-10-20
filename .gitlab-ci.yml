@@ -1,0 +1,260 @@
+# GitLab CI/CD Pipeline for SmartLearning Platform
+image: node:18-alpine
+
+stages:
+  - install
+  - lint
+  - build
+  - test
+  - deploy
+
+variables:
+  NODE_VERSION: "18"
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  GIT_DEPTH: 5
+
+# Cache configuration
+.cache_template: &cache_template
+  cache:
+    key:
+      files:
+        - package-lock.json
+        - backend/package-lock.json
+        - frontend/package-lock.json
+    paths:
+      - node_modules/
+      - backend/node_modules/
+      - frontend/node_modules/
+    policy: pull
+
+# ================================
+# INSTALL STAGE
+# ================================
+install:dependencies:
+  stage: install
+  script:
+    - echo "Installing root dependencies..."
+    - npm ci --prefer-offline --no-audit
+    - echo "Installing backend dependencies..."
+    - cd backend && npm ci --prefer-offline --no-audit
+    - echo "Installing frontend dependencies..."
+    - cd ../frontend && npm ci --prefer-offline --no-audit
+  cache:
+    <<: *cache_template
+    policy: pull-push
+  artifacts:
+    paths:
+      - node_modules/
+      - backend/node_modules/
+      - frontend/node_modules/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ================================
+# LINT STAGE
+# ================================
+lint:frontend:
+  stage: lint
+  <<: *cache_template
+  needs: ["install:dependencies"]
+  script:
+    - cd frontend
+    - echo "Running ESLint..."
+    - npm run lint
+  only:
+    - main
+    - develop
+    - merge_requests
+
+lint:backend:
+  stage: lint
+  <<: *cache_template
+  needs: ["install:dependencies"]
+  script:
+    - cd backend
+    - echo "Running TypeScript check..."
+    - npx tsc --noEmit
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ================================
+# BUILD STAGE
+# ================================
+build:backend:
+  stage: build
+  <<: *cache_template
+  needs: ["install:dependencies", "lint:backend"]
+  script:
+    - cd backend
+    - echo "Generating Prisma Client..."
+    - npx prisma generate
+    - echo "Building backend..."
+    - npm run build
+  artifacts:
+    paths:
+      - backend/dist/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+build:frontend:
+  stage: build
+  <<: *cache_template
+  needs: ["install:dependencies", "lint:frontend"]
+  before_script:
+    - echo "Setting up environment for build..."
+    - export NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-"http://localhost:5000"}
+  script:
+    - cd frontend
+    - echo "Building frontend..."
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/.next/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ================================
+# TEST STAGE
+# ================================
+test:type-check:
+  stage: test
+  <<: *cache_template
+  needs: ["build:frontend"]
+  script:
+    - cd frontend
+    - echo "Running TypeScript type check..."
+    - npm run type-check
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ================================
+# DOCKER BUILD STAGE
+# ================================
+.docker_build_template: &docker_build_template
+  image: docker:24-alpine
+  services:
+    - docker:24-dind
+  before_script:
+    - apk add --no-cache docker-compose
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY || true
+
+build:docker:backend:
+  <<: *docker_build_template
+  stage: build
+  script:
+    - cd backend
+    - docker build --target production -t smartlearning-backend:${CI_COMMIT_SHORT_SHA} .
+    - docker tag smartlearning-backend:${CI_COMMIT_SHORT_SHA} smartlearning-backend:latest
+    - echo "Backend Docker image built successfully"
+  only:
+    - main
+    - develop
+  when: manual
+
+build:docker:frontend:
+  <<: *docker_build_template
+  stage: build
+  script:
+    - cd frontend
+    - docker build --target production -t smartlearning-frontend:${CI_COMMIT_SHORT_SHA} .
+    - docker tag smartlearning-frontend:${CI_COMMIT_SHORT_SHA} smartlearning-frontend:latest
+    - echo "Frontend Docker image built successfully"
+  only:
+    - main
+    - develop
+  when: manual
+
+# ================================
+# DEPLOY STAGE
+# ================================
+.deploy_template: &deploy_template
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client bash git
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+deploy:staging:
+  <<: *deploy_template
+  stage: deploy
+  needs: ["build:backend", "build:frontend"]
+  environment:
+    name: staging
+    url: https://staging.smartlearning.com
+  script:
+    - echo "Deploying to staging environment..."
+    - ssh $SSH_USER@$SSH_HOST "cd $STAGING_PATH && git pull origin develop"
+    - ssh $SSH_USER@$SSH_HOST "cd $STAGING_PATH && docker-compose -f docker-compose.prod.yml down"
+    - ssh $SSH_USER@$SSH_HOST "cd $STAGING_PATH && docker-compose -f docker-compose.prod.yml up -d --build"
+    - echo "Staging deployment completed!"
+  only:
+    - develop
+  when: manual
+
+deploy:production:
+  <<: *deploy_template
+  stage: deploy
+  needs: ["build:backend", "build:frontend", "test:type-check"]
+  environment:
+    name: production
+    url: https://smartlearning.com
+  script:
+    - echo "Deploying to production environment..."
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH && git pull origin main"
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml down"
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml up -d --build"
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH/backend && npx prisma migrate deploy"
+    - echo "Production deployment completed!"
+  only:
+    - main
+  when: manual
+
+# ================================
+# DATABASE MIGRATION
+# ================================
+migrate:production:
+  <<: *deploy_template
+  stage: deploy
+  script:
+    - echo "Running database migrations on production..."
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH/backend && npx prisma migrate deploy"
+    - echo "Database migrations completed!"
+  only:
+    - main
+  when: manual
+  needs: []
+
+# ================================
+# ROLLBACK
+# ================================
+rollback:production:
+  <<: *deploy_template
+  stage: deploy
+  script:
+    - echo "Rolling back production deployment..."
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH && git reset --hard HEAD~1"
+    - ssh $SSH_USER@$SSH_HOST "cd $DEPLOY_PATH && docker-compose -f docker-compose.prod.yml restart"
+    - echo "Rollback completed!"
+  only:
+    - main
+  when: manual
+  needs: []
+

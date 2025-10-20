@@ -1,0 +1,17 @@
+{
+  "extends": "../.eslintrc.base.json",
+  "env": {
+    "node": true,
+    "es6": true
+  }
+}
+
+
+
+
+
+
+
+
+
+

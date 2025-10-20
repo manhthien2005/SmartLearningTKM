@@ -1,0 +1,176 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  user_id               Int                     @id @default(autoincrement())
+  email                 String                  @unique
+  password_hash         String
+  full_name             String
+  phone_number          String?
+  avatar_url            String?
+  date_of_birth         DateTime?
+  gender                String?
+  address               String?
+  status                String                  @default("active")
+  email_verified        Boolean                 @default(false)
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  last_login            DateTime?
+  admin                 Admins?
+  email_verifications   Email_Verifications[]
+  notification_settings Notification_Settings?
+  notification_actors   Notifications[]         @relation("NotificationActor")
+  notifications         Notifications[]
+  password_reset_tokens Password_Reset_Tokens[]
+  student               Students?
+  instructor            Instructors?
+  trusted_devices       Trusted_Devices[]
+  user_otps             User_OTPs[]
+  user_roles            User_Roles[]
+}
+
+model Admins {
+  admin_id               Int      @id @default(autoincrement())
+  user_id                Int      @unique
+  manage_users           Boolean?
+  manage_roles           Boolean?
+  manage_system_settings Boolean?
+  user                   Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Students {
+  student_id     Int     @id @default(autoincrement())
+  user_id        Int     @unique
+  school         String?
+  major          String?
+  specialization String?
+  user           Users   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Instructors {
+  instructor_id        Int                    @id @default(autoincrement())
+  user_id              Int                    @unique
+  user                 Users                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  teaching_experiences Teaching_Experiences[]
+
+  @@map("Instructors")
+}
+
+model Teaching_Experiences {
+  experience_id Int          @id @default(autoincrement())
+  instructor_id Int
+  school_name   String
+  subject       String
+  start_date    DateTime
+  end_date      DateTime?
+  instructor    Instructors  @relation(fields: [instructor_id], references: [instructor_id], onDelete: Cascade)
+}
+
+model Roles {
+  role_id     Int          @id @default(autoincrement())
+  role_name   String       @unique
+  description String?
+  created_at  DateTime     @default(now())
+  user_roles  User_Roles[]
+}
+
+model User_Roles {
+  user_role_id Int      @id @default(autoincrement())
+  user_id      Int
+  role_id      Int
+  assigned_at  DateTime @default(now())
+  role         Roles    @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+  user         Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, role_id])
+}
+
+model Password_Reset_Tokens {
+  token_id   Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Email_Verifications {
+  verification_id Int      @id @default(autoincrement())
+  user_id         Int
+  token           String   @unique
+  expires_at      DateTime
+  verified        Boolean  @default(false)
+  created_at      DateTime @default(now())
+  user            Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model User_OTPs {
+  otp_id     Int      @id @default(autoincrement())
+  user_id    Int
+  code       String
+  purpose    String
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, purpose])
+}
+
+model Trusted_Devices {
+  device_id    Int      @id @default(autoincrement())
+  user_id      Int
+  device_token String   @unique
+  device_name  String?
+  device_type  String?
+  user_agent   String?
+  ip_address   String?
+  last_used    DateTime @default(now())
+  expires_at   DateTime
+  created_at   DateTime @default(now())
+  user         Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, device_token])
+  @@index([expires_at])
+}
+
+model Notifications {
+  notification_id Int       @id @default(autoincrement())
+  user_id         Int
+  actor_id        Int?
+  type            String
+  title           String
+  content         String
+  data            Json?
+  is_read         Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  read_at         DateTime?
+  actor           Users?    @relation("NotificationActor", fields: [actor_id], references: [user_id])
+  user            Users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
+  @@index([type])
+}
+
+model Notification_Settings {
+  settings_id          Int      @id @default(autoincrement())
+  user_id              Int      @unique
+  web_forum_reply      Boolean  @default(true)
+  web_mention          Boolean  @default(true)
+  web_assignment_grade Boolean  @default(true)
+  web_system           Boolean  @default(true)
+  email_important      Boolean  @default(true)
+  email_weekly_summary Boolean  @default(false)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  user                 Users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
